@@ -4,9 +4,23 @@ import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+interface Contact {
+  id: string;
+  name: string;
+  company_name: string;
+  position: string;
+  email: string;
+  phone: string;
+  linkedin_url: string;
+}
+
+interface Session {
+  id: string;
+}
+
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getSession() as Session | null;
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -21,8 +35,7 @@ export async function GET() {
       WHERE c.user_id = ?
       ORDER BY c.name ASC
     `, [session.id]);
-
-    const formattedContacts = contacts.map(contact => ({
+    const formattedContacts = contacts.map((contact: Contact) => ({
       id: contact.id,
       name: contact.name,
       company: {
@@ -46,7 +59,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getSession() as Session | null;
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

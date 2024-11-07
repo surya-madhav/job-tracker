@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/db';
+interface Session {
+  id: string;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +23,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getSession() as Session | null;
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
