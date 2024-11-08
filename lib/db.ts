@@ -95,4 +95,279 @@ export async function getDb() {
   return db;
 }
 
-// Rest of the file remains the same...
+// User Operations
+export async function createUser(name: string, email: string, password: string) {
+  const db = await getDb();
+  const hashedPassword = await hash(password, 10);
+  const id = crypto.randomUUID();
+
+  await db.run(
+    'INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)',
+    [id, name, email, hashedPassword]
+  );
+
+  return { id, name, email };
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  return await db.get('SELECT * FROM users WHERE email = ?', [email]);
+}
+
+export async function getUserById(id: string) {
+  const db = await getDb();
+  return await db.get('SELECT * FROM users WHERE id = ?', [id]);
+}
+
+export async function verifyPassword(hashedPassword: string, password: string) {
+  return await compare(password, hashedPassword);
+}
+
+// Job Operations
+export async function createJob(data: {
+  user_id: string;
+  title: string;
+  company_id?: string;
+  url?: string;
+  status: string;
+  application_date?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+
+  await db.run(`
+    INSERT INTO jobs (
+      id, user_id, title, company_id, url, status, application_date, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    id,
+    data.user_id,
+    data.title,
+    data.company_id,
+    data.url,
+    data.status,
+    data.application_date,
+    data.notes
+  ]);
+
+  return { id, ...data };
+}
+
+export async function getJobs(userId: string) {
+  const db = await getDb();
+  return await db.all(`
+    SELECT j.*, c.name as company_name
+    FROM jobs j
+    LEFT JOIN companies c ON j.company_id = c.id
+    WHERE j.user_id = ?
+    ORDER BY j.application_date DESC
+  `, [userId]);
+}
+
+export async function getJobById(id: string) {
+  const db = await getDb();
+  return await db.get(`
+    SELECT j.*, c.name as company_name
+    FROM jobs j
+    LEFT JOIN companies c ON j.company_id = c.id
+    WHERE j.id = ?
+  `, [id]);
+}
+
+export async function updateJob(id: string, data: Partial<{
+  title: string;
+  company_id: string;
+  url: string;
+  status: string;
+  application_date: string;
+  notes: string;
+}>) {
+  const db = await getDb();
+  const sets = Object.entries(data)
+    .map(([key]) => `${key} = ?`)
+    .join(', ');
+
+  await db.run(`
+    UPDATE jobs
+    SET ${sets}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `, [...Object.values(data), id]);
+
+  return await getJobById(id);
+}
+
+export async function deleteJob(id: string) {
+  const db = await getDb();
+  await db.run('DELETE FROM jobs WHERE id = ?', [id]);
+}
+
+// Company Operations
+export async function createCompany(data: {
+  name: string;
+  website?: string;
+  industry?: string;
+  location?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+
+  await db.run(`
+    INSERT INTO companies (
+      id, name, website, industry, location, notes
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `, [
+    id,
+    data.name,
+    data.website,
+    data.industry,
+    data.location,
+    data.notes
+  ]);
+
+  return { id, ...data };
+}
+
+export async function getCompanyById(id: string) {
+  const db = await getDb();
+  return await db.get('SELECT * FROM companies WHERE id = ?', [id]);
+}
+
+export async function updateCompany(id: string, data: Partial<{
+  name: string;
+  website: string;
+  industry: string;
+  location: string;
+  notes: string;
+}>) {
+  const db = await getDb();
+  const sets = Object.entries(data)
+    .map(([key]) => `${key} = ?`)
+    .join(', ');
+
+  await db.run(`
+    UPDATE companies
+    SET ${sets}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `, [...Object.values(data), id]);
+
+  return await getCompanyById(id);
+}
+
+export async function deleteCompany(id: string) {
+  const db = await getDb();
+  await db.run('DELETE FROM companies WHERE id = ?', [id]);
+}
+
+// Contact Operations
+export async function createContact(data: {
+  user_id: string;
+  company_id?: string;
+  name: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  linkedin_url?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+
+  await db.run(`
+    INSERT INTO contacts (
+      id, user_id, company_id, name, position, email, phone, linkedin_url, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    id,
+    data.user_id,
+    data.company_id,
+    data.name,
+    data.position,
+    data.email,
+    data.phone,
+    data.linkedin_url,
+    data.notes
+  ]);
+
+  return { id, ...data };
+}
+
+export async function getContactById(id: string) {
+  const db = await getDb();
+  return await db.get(`
+    SELECT c.*, comp.name as company_name
+    FROM contacts c
+    LEFT JOIN companies comp ON c.company_id = comp.id
+    WHERE c.id = ?
+  `, [id]);
+}
+
+export async function getUserContacts(userId: string) {
+  const db = await getDb();
+  return await db.all(`
+    SELECT c.*, comp.name as company_name
+    FROM contacts c
+    LEFT JOIN companies comp ON c.company_id = comp.id
+    WHERE c.user_id = ?
+    ORDER BY c.name ASC
+  `, [userId]);
+}
+
+export async function updateContact(id: string, data: Partial<{
+  name: string;
+  position: string;
+  email: string;
+  phone: string;
+  linkedin_url: string;
+  notes: string;
+}>) {
+  const db = await getDb();
+  const sets = Object.entries(data)
+    .map(([key]) => `${key} = ?`)
+    .join(', ');
+
+  await db.run(`
+    UPDATE contacts
+    SET ${sets}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `, [...Object.values(data), id]);
+
+  return await getContactById(id);
+}
+
+export async function deleteContact(id: string) {
+  const db = await getDb();
+  await db.run('DELETE FROM contacts WHERE id = ?', [id]);
+}
+
+// Job Contacts Operations
+export async function addJobContact(jobId: string, contactId: string) {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+
+  await db.run(`
+    INSERT INTO job_contacts (id, job_id, contact_id)
+    VALUES (?, ?, ?)
+  `, [id, jobId, contactId]);
+
+  return { id, job_id: jobId, contact_id: contactId };
+}
+
+export async function getJobContacts(jobId: string) {
+  const db = await getDb();
+  return await db.all(`
+    SELECT c.*, jc.id as job_contact_id
+    FROM contacts c
+    JOIN job_contacts jc ON c.id = jc.contact_id
+    WHERE jc.job_id = ?
+  `, [jobId]);
+}
+
+export async function removeJobContact(jobId: string, contactId: string) {
+  const db = await getDb();
+  await db.run(
+    'DELETE FROM job_contacts WHERE job_id = ? AND contact_id = ?',
+    [jobId, contactId]
+  );
+}

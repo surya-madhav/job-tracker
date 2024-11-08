@@ -3,10 +3,21 @@ import { getDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+interface Job {
+  id: string;
+  title: string;
+  company_name: string;
+  status: string;
+  application_date: string;
+  url: string;
+}
 
+interface Session {
+  id: string;
+}
 export async function GET() {
   try {
-    const session = await getSession();
+    const session = await getSession() as Session | null;
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -22,7 +33,7 @@ export async function GET() {
       ORDER BY j.application_date DESC
     `, [session.id]);
 
-    const formattedJobs = jobs.map(job => ({
+    const formattedJobs = jobs.map((job: Job) => ({
       id: job.id,
       title: job.title,
       company: {
