@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z
@@ -145,7 +146,8 @@ export default function RegisterPage() {
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>
-                  <div className="mt-2 space-y-2">                    
+                  <div className="mt-2 space-y-2">
+                    <Progress value={passwordStrength} className="h-2" />
                     <p className="text-xs text-muted-foreground">
                       Password must contain at least 8 characters, one uppercase
                       letter, one lowercase letter, one number, and one special

@@ -4,7 +4,38 @@ import { createToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Registration successful
+ *       400:
+ *         description: Invalid input or email already exists
+ *       500:
+ *         description: Internal server error
+ */
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();

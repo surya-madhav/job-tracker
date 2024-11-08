@@ -6,36 +6,13 @@ export const dynamic = 'force-dynamic';
  * @swagger
  * /api/auth/logout:
  *   post:
- *     summary: Logout user by removing authentication token
- *     tags: [Authentication]
- *     security:
- *       - cookieAuth: []
+ *     summary: Logout user
+ *     tags: [Auth]
  *     responses:
  *       200:
- *         description: Successfully logged out
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               description: Removes the authentication token cookie
+ *         description: Logout successful
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Internal server error
  */
 export async function POST() {
   try {
