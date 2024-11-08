@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 207 96% 23%; /* #023E73 */
+    --text-secondary: 0 0% 20%; /* #333333 */
+
+    /* Card colors */
+    --card: 0 0% 100%;
+    --card-foreground: 207 96% 23%;
+
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 207 96% 23%;
+
+    /* Primary colors - Vibrant Blue */
+    --primary: 201 96% 33%; /* #0378A6 */
+    --primary-hover: 201 96% 26%; /* #025A82 */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary colors - Soft Teal */
+    --secondary: 174 35% 61%; /* #7ABFB3 */
+    --secondary-foreground: 207 96% 23%;
+
+    /* Accent colors - Bright Orange */
+    --accent: 29 88% 57%; /* #F28B30 */
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive colors - Muted Red */
+    --destructive: 0 57% 48%; /* #BF3434 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Muted/Neutral colors */
+    --muted: 0 0% 96%; /* #F5F5F5 */
+    --muted-foreground: 0 0% 45%; /* #737373 */
+
+    /* Border colors */
+    --border: 0 0% 88%; /* #E0E0E0 */
+    --input: 0 0% 88%; /* #E0E0E0 */
+    --ring: 201 96% 33%; /* #0378A6 */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode - Invert the color scheme while maintaining contrast */
+    --background: 0 0% 9%; /* #171717 */
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 201 96% 33%;
+    --primary-hover: 201 96% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 35% 61%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 29 88% 57%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 57% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 201 96% 33%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground font-bold;
+  }
+  p {
+    @apply text-text-secondary;
+  }
+  a {
+    @apply text-primary hover:text-primary-hover transition-colors;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/50 rounded-full hover:bg-primary;
+}
+
+/* Enhanced Animations */
+@keyframes blob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes icon {
+  0%, 100% {
+    transform: scale(1) rotate(0);
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+@layer utilities {
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out forwards;
+  }
+
+  .animate-icon {
+    animation: icon 2s ease-in-out infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 0.6s;
+  }
+
+  .animation-delay-800 {
+    animation-delay: 0.8s;
+  }
+
+  .bg-grid-pattern {
+    background-image: linear-gradient(to right, rgb(0 0 0 / 0.1) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgb(0 0 0 / 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
