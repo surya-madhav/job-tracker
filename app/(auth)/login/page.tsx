@@ -17,9 +17,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+
 import { useAuth } from '@/hooks/use-auth';
 import type { ToastProps } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -119,7 +120,7 @@ export default function LoginPage() {
             href="/register"
             className="text-sm hover:text-primary transition-colors"
           >
-            Don't have an account? Sign up
+            Don&apos;t have an account? Sign up
           </Link>
           <div className="block">
             <Link
