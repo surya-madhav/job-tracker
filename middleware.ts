@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { updateSession, isDev } from '@/lib/auth';
+import { updateSession, isDev, Session } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const session = await updateSession(request);
+  const session: Session | null = await updateSession(request);
 
   // Redirect authenticated users away from auth pages
   if (session && isPublicPath && path !== '/') {

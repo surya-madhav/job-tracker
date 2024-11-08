@@ -1,26 +1,29 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import { Contact } from '@/lib/db/contacts';
+
+interface ContactWithCompany extends Contact {
+  company_name: string;
+}
+
+interface FormattedContact {
+  id: string;
+  name: string;
+  company: {
+    name: string;
+  };
+  position: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedinUrl: string | null;
+}
 
 export const dynamic = 'force-dynamic';
 
-interface Contact {
-  id: string;
-  name: string;
-  company_name: string;
-  position: string;
-  email: string;
-  phone: string;
-  linkedin_url: string;
-}
-
-interface Session {
-  id: string;
-}
-
 export async function GET() {
   try {
-    const session = await getSession() as Session | null;
+    const session = await getSession();
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -31,20 +34,21 @@ export async function GET() {
         c.*,
         comp.name as company_name
       FROM contacts c
-      JOIN companies comp ON c.company_id = comp.id
+      LEFT JOIN companies comp ON c.company_id = comp.id
       WHERE c.user_id = ?
       ORDER BY c.name ASC
-    `, [session.id]);
-    const formattedContacts = contacts.map((contact: Contact) => ({
+    `, [session.id]) as ContactWithCompany[];
+
+    const formattedContacts: FormattedContact[] = contacts.map(contact => ({
       id: contact.id,
       name: contact.name,
       company: {
         name: contact.company_name
       },
-      position: contact.position,
-      email: contact.email,
-      phone: contact.phone,
-      linkedinUrl: contact.linkedin_url,
+      position: contact.position || null,
+      email: contact.email || null,
+      phone: contact.phone || null,
+      linkedinUrl: contact.linkedin_url || null,
     }));
 
     return NextResponse.json({ contacts: formattedContacts });
@@ -59,7 +63,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession() as Session | null;
+    const session = await getSession();
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

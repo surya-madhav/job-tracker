@@ -1,75 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/db';
-interface Session {
-  id: string;
-}
 
 export const dynamic = 'force-dynamic';
 
 /**
  * @swagger
- * /api/auth/session:
+ * /api/auth/me:
  *   get:
- *     summary: Get current user session information
- *     tags: [Authentication]
+ *     summary: Get current user information
+ *     tags: [Auth]
  *     security:
- *       - cookieAuth: []
+ *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Successfully retrieved user session
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                       description: User's unique identifier
- *                     name:
- *                       type: string
- *                       description: User's full name
- *                     email:
- *                       type: string
- *                       format: email
- *                       description: User's email address
+ *         description: User information retrieved successfully
  *       401:
- *         description: Unauthorized - No valid session found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Unauthorized
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: User not found
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Internal server error
+ *         description: Unauthorized
  */
 export async function GET() {
   try {
-    const session = await getSession() as Session | null;
+    const session = await getSession();
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

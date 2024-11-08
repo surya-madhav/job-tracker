@@ -6,6 +6,13 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'default_secret_key_change_this_in_production'
 );
 
+export interface Session {
+  id: string;
+  email?: string;
+  iat?: number;
+  exp?: number;
+}
+
 export const DEV_USER = {
   id: 'dev-user-id',
   name: 'Development User',
@@ -14,7 +21,7 @@ export const DEV_USER = {
 
 export const isDev = process.env.NODE_ENV === 'development';
 
-export async function createToken(payload: any) {
+export async function createToken(payload: Partial<Session>): Promise<string> {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -22,10 +29,10 @@ export async function createToken(payload: any) {
     .sign(JWT_SECRET);
 }
 
-export async function verifyToken(token: string) {
+export async function verifyToken(token: string): Promise<Session | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload;
+    return payload as Session;
   } catch (error) {
     if (isDev) {
       return { id: DEV_USER.id };
@@ -34,7 +41,7 @@ export async function verifyToken(token: string) {
   }
 }
 
-export async function getSession() {
+export async function getSession(): Promise<Session | null> {
   if (isDev) {
     return { id: DEV_USER.id };
   }
@@ -44,7 +51,7 @@ export async function getSession() {
   return await verifyToken(token);
 }
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest): Promise<Session | null> {
   if (isDev) {
     return { id: DEV_USER.id };
   }

@@ -2,11 +2,12 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Briefcase, Building2, Users, LogOut } from 'lucide-react';
+import { Briefcase, Building2, Users, FileText, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ChatWindow } from '@/components/chat/chat-window';
 
 export default function AuthenticatedLayout({
   children,
@@ -21,6 +22,7 @@ export default function AuthenticatedLayout({
     { name: 'Applications', href: '/jobs', icon: Briefcase },
     { name: 'Companies', href: '/companies', icon: Building2 },
     { name: 'Contacts', href: '/contacts', icon: Users },
+    { name: 'Resumes', href: '/resumes', icon: FileText },
   ];
 
   return (
@@ -67,8 +69,12 @@ export default function AuthenticatedLayout({
       </nav>
 
       <main className="bg-background">
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">{children}</div>
+        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </main>
+
+      <ChatWindow />
     </div>
   );
 }
