@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Authenticate user
- *     tags: [Auth]
+ *     summary: Authenticate user and get access token
+ *     tags: [Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -23,15 +23,63 @@ export const dynamic = 'force-dynamic';
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: User's email address
  *               password:
  *                 type: string
+ *                 format: password
+ *                 description: User's password
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Successfully authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               description: Authentication token cookie
+ *       400:
+ *         description: Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Missing required fields
  *       401:
  *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid credentials
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Internal server error
  */
 export async function POST(request: Request) {
   try {
