@@ -22,7 +22,7 @@ export async function GET() {
       ORDER BY j.application_date DESC
     `, [session.id]);
 
-    const formattedJobs = jobs.map(job => ({
+    const formattedJobs = jobs.map((job:any) => ({
       id: job.id,
       title: job.title,
       company: {

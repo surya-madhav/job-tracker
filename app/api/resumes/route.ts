@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { getUserResumes, createResume } from '@/lib/db';
+import { getResumes, createResume } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +74,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const resumes = await getUserResumes(session.id);
+    const resumes = await getResumes(session.id);
     return NextResponse.json({ resumes });
   } catch (error) {
     console.error('Failed to fetch resumes:', error);
@@ -94,13 +94,12 @@ export async function POST(request: Request) {
 
     const { name, tags, fileUrl, jsonData } = await request.json();
 
-    const resume = await createResume({
-      userId: session.id,
+    const resume = await createResume(ResumeData(session.id,
       name,
       tags,
       fileUrl,
-      jsonData,
-    });
+      jsonData)
+      );
 
     return NextResponse.json({ resume });
   } catch (error) {
@@ -110,4 +109,8 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function ResumeData(id: string, name: any, tags: any, fileUrl: any, jsonData: any): import("@/lib/db").ResumeData {
+  throw new Error('Function not implemented.');
 }

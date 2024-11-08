@@ -24,7 +24,7 @@ export async function POST() {
     return NextResponse.json({
       status: 'success',
       message: 'Database initialized and seeded successfully',
-      tables: tables.map(t => t.name),
+      tables: tables.map((t:{name:string}) => t.name),
       counts
     });
   } catch (error) {

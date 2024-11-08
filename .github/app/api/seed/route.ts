@@ -20,13 +20,14 @@ export async function POST() {
         return { table, count: result.count };
       })
     );
-
     return NextResponse.json({
       status: 'success',
       message: 'Database initialized and seeded successfully',
-      tables: tables.map(t => t.name),
+      tables: tables.map((t:{name:string}) => t.name),
       counts
     });
+
+    
   } catch (error) {
     console.error('Database initialization error:', error);
     return NextResponse.json({
