@@ -8,3 +8,13 @@ jest.mock('next/headers', () => ({
     delete: jest.fn(),
   }),
 }));
+
+// Mock crypto for UUID generation
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => 'test-uuid',
+  },
+});
+
+// Mock fetch
+global.fetch = jest.fn();

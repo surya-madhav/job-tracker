@@ -17,7 +17,13 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  isLoading: true,
+});
 
 // Development user for auth bypass
 const DEV_USER = {

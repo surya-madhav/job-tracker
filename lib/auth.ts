@@ -32,7 +32,13 @@ export async function createToken(payload: Partial<Session>): Promise<string> {
 export async function verifyToken(token: string): Promise<Session | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as Session;
+    // Fix the conversion
+    let session = {} as Session;
+    session.iat = payload.iat as number;
+    session.exp = payload.exp as number
+    session.id = payload.id as string;
+    session.email = payload.email as string;
+    return session;
   } catch (error) {
     if (isDev) {
       return { id: DEV_USER.id };

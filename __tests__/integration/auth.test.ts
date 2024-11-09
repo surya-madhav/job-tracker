@@ -4,6 +4,13 @@ import request from 'supertest';
 import { POST as loginHandler } from '@/app/api/auth/login/route';
 import { POST as registerHandler } from '@/app/api/auth/register/route';
 import { POST as logoutHandler } from '@/app/api/auth/logout/route';
+import { createToken } from '@/lib/auth';
+import { createUser, getUserByEmail } from '@/lib/db';
+
+jest.mock('@/lib/db', () => ({
+  createUser: jest.fn(),
+  getUserByEmail: jest.fn(),
+}));
 
 describe('Authentication Integration Tests', () => {
   let server: any;
@@ -47,24 +54,36 @@ describe('Authentication Integration Tests', () => {
     });
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   afterAll((done) => {
     server.close(done);
   });
 
   describe('POST /api/auth/register', () => {
     it('should register a new user', async () => {
+      const userData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      (createUser as jest.Mock).mockResolvedValue({
+        id: '123',
+        name: userData.name,
+        email: userData.email,
+      });
+
       const response = await request(server)
         .post('/api/auth/register')
-        .send({
-          name: 'Test User',
-          email: 'test@example.com',
-          password: 'Password123!',
-        });
+        .send(userData);
 
       expect(response.status).toBe(200);
       expect(response.body.user).toBeDefined();
-      expect(response.body.user.name).toBe('Test User');
-      expect(response.body.user.email).toBe('test@example.com');
+      expect(response.body.user.name).toBe(userData.name);
+      expect(response.body.user.email).toBe(userData.email);
       expect(response.headers['set-cookie']).toBeDefined();
     });
 
@@ -82,12 +101,21 @@ describe('Authentication Integration Tests', () => {
 
   describe('POST /api/auth/login', () => {
     it('should login user with valid credentials', async () => {
+      const credentials = {
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      (getUserByEmail as jest.Mock).mockResolvedValue({
+        id: '123',
+        name: 'Test User',
+        email: credentials.email,
+        password: '$2a$10$mockhashedpassword',
+      });
+
       const response = await request(server)
         .post('/api/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'Password123!',
-        });
+        .send(credentials);
 
       expect(response.status).toBe(200);
       expect(response.body.user).toBeDefined();
@@ -95,6 +123,8 @@ describe('Authentication Integration Tests', () => {
     });
 
     it('should return 401 for invalid credentials', async () => {
+      (getUserByEmail as jest.Mock).mockResolvedValue(null);
+
       const response = await request(server)
         .post('/api/auth/login')
         .send({
@@ -113,6 +143,8 @@ describe('Authentication Integration Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
+      expect(response.headers['set-cookie']).toBeDefined();
+      expect(response.headers['set-cookie'][0]).toContain('token=');
     });
   });
 });

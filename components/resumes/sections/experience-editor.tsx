@@ -31,7 +31,8 @@ interface Experience {
   startDate: string;
   endDate: string;
   achievements: Achievement[];
-  include: boolean;
+  include: boolean;  
+  target?: any;
 }
 
 export function ExperienceEditor() {

@@ -94,12 +94,13 @@ export async function POST(request: Request) {
 
     const { name, tags, fileUrl, jsonData } = await request.json();
 
-    const resume = await createResume(ResumeData(session.id,
+    const resume = await createResume({
+      user_id: session.id,
       name,
       tags,
-      fileUrl,
-      jsonData)
-      );
+      file_url: fileUrl,
+      json_data: jsonData,
+    });
 
     return NextResponse.json({ resume });
   } catch (error) {
@@ -109,8 +110,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-function ResumeData(id: string, name: any, tags: any, fileUrl: any, jsonData: any): import("@/lib/db").ResumeData {
-  throw new Error('Function not implemented.');
 }

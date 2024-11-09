@@ -8,11 +8,9 @@ export interface ResumeData {
   json_data?: object;
 }
 
-export interface Resume extends Omit<ResumeData, 'tags' | 'json_data'> {  
+export interface Resume extends Omit<ResumeData, 'tags' | 'json_data'> {
   id: string;
   tags: string;
-  user_id: string;
-  file_url: string;
   json_data: string;
   created_at: string;
   updated_at: string;
@@ -21,7 +19,7 @@ export interface Resume extends Omit<ResumeData, 'tags' | 'json_data'> {
 export async function getResumes(userId: string): Promise<Resume[]> {
   const db = await getDb();
   const resumes = await db.all('SELECT * FROM resumes WHERE user_id = ?', [userId]);
-  return resumes.map((resume: Resume) => ({
+  return resumes.map((resume: any) => ({
     ...resume,
     tags: JSON.parse(resume.tags || '[]'),
     json_data: JSON.parse(resume.json_data || '{}')
