@@ -1,60 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Building2, Globe, MapPin, Phone, Mail, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Job, JobStatus } from '@prisma/client';
+import { useCompany } from '@/hooks/use-companies';
+import { formatDistanceToNow } from 'date-fns';
 
-interface Company {
-  id: string;
-  name: string;
-  website: string;
-  industry: string;
-  location: string;
-  notes: string;
-}
-
-interface Job {
-  id: string;
-  title: string;
-  status: string;
-  application_date: string;
-}
+const statusColorMap: Record<JobStatus, string> = {
+  SAVED: 'bg-secondary text-secondary-foreground',
+  APPLIED: 'bg-blue-100 text-blue-800 dark:bg-blue-900',
+  INTERVIEWING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900',
+  OFFERED: 'bg-green-100 text-green-800 dark:bg-green-900',
+  REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900',
+};
 
 export default function CompanyDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [company, setCompany] = useState<Company | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: company, isLoading, error } = useCompany(params.id);
 
-  useEffect(() => {
-    const fetchCompanyDetails = async () => {
-      try {
-        const response = await fetch(`/api/companies/${params.id}`);
-        if (!response.ok) throw new Error('Company not found');
-        const data = await response.json();
-        setCompany(data);
-        
-        // Fetch related jobs
-        const jobsResponse = await fetch(`/api/companies/${params.id}/jobs`);
-        if (jobsResponse.ok) {
-          const jobsData = await jobsResponse.json();
-          setJobs(jobsData);
-        }
-      } catch (error) {
-        console.error('Failed to fetch company details:', error);
-        router.push('/companies');
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (error) {
+    router.push('/companies');
+    return null;
+  }
 
-    fetchCompanyDetails();
-  }, [params.id, router]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -138,37 +111,111 @@ export default function CompanyDetailPage({ params }: { params: { id: string } }
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Job Applications</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push(`/jobs/new?company=${company.id}`)}
+            >
+              <Briefcase className="h-4 w-4 mr-2" />
+              Add Job
+            </Button>
           </CardHeader>
           <CardContent>
-            {jobs.length > 0 ? (
+            {company.jobs && company.jobs.length > 0 ? (
               <div className="space-y-4">
-                {jobs.map((job) => (
+                {company.jobs.map((job:Job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 cursor-pointer"
+                    onClick={() => router.push(`/jobs/${job.id}`)}
                   >
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{job.title}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(job.application_date).toLocaleDateString()}
-                      </span>
-                      <span className="text-sm bg-secondary/20 text-secondary-foreground px-2 py-1 rounded">
+                      {job.applicationDate && (
+                        <span className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(job.applicationDate), { addSuffix: true })}
+                        </span>
+                      )}
+                      <Badge className={statusColorMap[job.status]}>
                         {job.status}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">
-                No job applications yet
-              </p>
+              <div className="text-center py-8 text-muted-foreground">
+                <Briefcase className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No job applications yet</p>
+                <Button 
+                  variant="link" 
+                  onClick={() => router.push(`/jobs/new?company=${company.id}`)}
+                >
+                  Add your first application
+                </Button>
+              </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Recent activity items */}
+              <div className="text-sm text-muted-foreground">
+                Company added {formatDistanceToNow(new Date(company.createdAt), { addSuffix: true })}
+              </div>
+              {company.jobs?.map((job:Job) => (
+                <div key={job.id} className="text-sm text-muted-foreground">
+                  Applied for {job.title} position{' '}
+                  {job.applicationDate && (
+                    formatDistanceToNow(new Date(job.applicationDate), { addSuffix: true })
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Statistics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Total Applications</p>
+                <p className="text-2xl font-bold">{company.jobs?.length || 0}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Active Applications</p>
+                <p className="text-2xl font-bold">
+                  {company.jobs?.filter((job:Job) => 
+                    job.status === 'APPLIED' || job.status === 'INTERVIEWING'
+                  ).length || 0}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                <p className="text-2xl font-bold">
+                  {company.jobs?.length ? 
+                    Math.round((company.jobs.filter((job:Job) => job.status === 'OFFERED').length / 
+                    company.jobs.length) * 100) : 0}%
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Avg. Response Time</p>
+                <p className="text-2xl font-bold">-</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

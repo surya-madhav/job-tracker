@@ -18,11 +18,12 @@ describe('Authentication Unit Tests', () => {
       const token = await createToken(payload);
       
       expect(token).toBeDefined();
+      expect(typeof token).toBe('string');
       
       const verified = await verifyToken(token);
       expect(verified).toBeDefined();
-      expect(verified.id).toBe(payload.id);
-      expect(verified.email).toBe(payload.email);
+      expect(verified?.id).toBe(payload.id);
+      expect(verified?.email).toBe(payload.email);
     });
 
     it('should return null for invalid token', async () => {
@@ -55,6 +56,11 @@ describe('Authentication Unit Tests', () => {
       expect(result.name).toBe(userData.name);
       expect(result.email).toBe(userData.email);
       expect(createUser).toHaveBeenCalledTimes(1);
+      expect(createUser).toHaveBeenCalledWith(
+        userData.name,
+        userData.email,
+        userData.password
+      );
     });
 
     it('should get user by email', async () => {
@@ -73,6 +79,14 @@ describe('Authentication Unit Tests', () => {
       expect(result).toBeDefined();
       expect(result.email).toBe(email);
       expect(getUserByEmail).toHaveBeenCalledWith(email);
+    });
+
+    it('should return undefined for non-existent user', async () => {
+      const email = 'nonexistent@example.com';
+      (getUserByEmail as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await getUserByEmail(email);
+      expect(result).toBeUndefined();
     });
   });
 });

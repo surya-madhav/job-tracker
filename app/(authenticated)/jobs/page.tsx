@@ -1,31 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Briefcase, Plus, LayoutGrid, List, Kanban, Search, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { useJobs } from '@/hooks/use-jobs';
+import { JobStatus } from '@prisma/client';
 import { JobGrid } from '@/components/jobs/job-grid';
 import { JobList } from '@/components/jobs/job-list';
 import { JobKanban } from '@/components/jobs/job-kanban';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Plus, LayoutGrid, List, Kanban, Search, Filter } from 'lucide-react';
+import Link from 'next/link';
 
 type ViewType = 'grid' | 'list' | 'kanban';
 
 const statusOptions = [
   { value: 'all', label: 'All Status' },
-  { value: 'saved', label: 'Saved' },
-  { value: 'applied', label: 'Applied' },
-  { value: 'interviewing', label: 'Interviewing' },
-  { value: 'offered', label: 'Offered' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: JobStatus.SAVED, label: 'Saved' },
+  { value: JobStatus.APPLIED, label: 'Applied' },
+  { value: JobStatus.INTERVIEWING, label: 'Interviewing' },
+  { value: JobStatus.OFFERED, label: 'Offered' },
+  { value: JobStatus.REJECTED, label: 'Rejected' },
 ];
 
 const sortOptions = [
@@ -36,46 +34,40 @@ const sortOptions = [
 ];
 
 export default function JobsPage() {
+  const { user } = useAuth();
   const [view, setView] = useState<ViewType>('grid');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [sort, setSort] = useState('newest');
 
-  const [jobs] = useState([
-    {
-      id: '1',
-      title: 'Senior Frontend Developer',
-      company: 'Tech Corp Inc.',
-      status: 'Applied',
-      date: '2024-01-15',
-      location: 'San Francisco, CA',
-      salary: '$150k - $180k',
-    },
-    {
-      id: '2',
-      title: 'Full Stack Engineer',
-      company: 'Startup Co.',
-      status: 'Interviewing',
-      date: '2024-01-10',
-      location: 'Remote',
-      salary: '$130k - $160k',
-    },
-    {
-      id: '3',
-      title: 'Software Architect',
-      company: 'Enterprise Systems',
-      status: 'Saved',
-      date: '2024-01-20',
-      location: 'New York, NY',
-      salary: '$170k - $200k',
-    },
-  ]);
+  // Fetch jobs using the hook
+  const { data: jobs, isLoading, error } = useJobs({
+    userId: user?.id,
+    status: status !== 'all' ? status as JobStatus : undefined,
+    title: search || undefined,
+  });
 
   const viewOptions = [
     { icon: LayoutGrid, value: 'grid', label: 'Grid' },
     { icon: List, value: 'list', label: 'List' },
     { icon: Kanban, value: 'kanban', label: 'Kanban' },
   ];
+
+  // Sort jobs based on selected option
+  const sortedJobs = jobs ? [...jobs].sort((a, b) => {
+    switch (sort) {
+      case 'newest':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'company':
+        return (a.company?.name || '').localeCompare(b.company?.name || '');
+      case 'title':
+        return a.title.localeCompare(b.title);
+      default:
+        return 0;
+    }
+  }) : [];
 
   return (
     <div className="space-y-6">
@@ -152,9 +144,25 @@ export default function JobsPage() {
       </Card>
 
       <div className="mt-6">
-        {view === 'grid' && <JobGrid jobs={jobs} />}
-        {view === 'list' && <JobList jobs={jobs} />}
-        {view === 'kanban' && <JobKanban jobs={jobs} />}
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <LoadingSpinner />
+          </div>
+        ) : error ? (
+          <div className="text-center text-destructive">
+            Error loading jobs: {error.message}
+          </div>
+        ) : sortedJobs.length === 0 ? (
+          <div className="text-center text-muted-foreground">
+            No jobs found. Try adjusting your filters or add a new job application.
+          </div>
+        ) : (
+          <>
+            {view === 'grid' && <JobGrid jobs={sortedJobs} />}
+            {view === 'list' && <JobList jobs={sortedJobs} />}
+            {view === 'kanban' && <JobKanban jobs={sortedJobs} />}
+          </>
+        )}
       </div>
     </div>
   );

@@ -4,9 +4,17 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddApplicationForm } from '@/components/forms/add-application-form';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function NewJobPage() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  // Redirect if not authenticated
+  if (!isLoading && !user) {
+    router.push('/login');
+    return null;
+  }
 
   return (
     <div className="space-y-6">
