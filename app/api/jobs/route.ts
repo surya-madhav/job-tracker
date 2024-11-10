@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, userAgent } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { JobStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,51 +25,7 @@ const jobsApiLogger = {
   }
 };
 
-/**
- * @swagger
- * /api/jobs:
- *   get:
- *     summary: Get all jobs for authenticated user
- *     tags: [Jobs]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: List of jobs
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 jobs:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       title:
- *                         type: string
- *                       company:
- *                         type: object
- *                         properties:
- *                           name:
- *                             type: string
- *                       status:
- *                         type: string
- *                         enum: [applied, interview, offer, rejected]
- *                       applicationDate:
- *                         type: string
- *                         format: date
- *                       url:
- *                         type: string
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-export async function GET() {
+export async function GET(request: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const requestStartTime = performance.now();
   
@@ -75,8 +33,10 @@ export async function GET() {
 
   try {
     // Auth check
+    
     const sessionStartTime = performance.now();
     const session = await getSession();
+    
     const sessionDuration = performance.now() - sessionStartTime;
     
     jobsApiLogger.debug('Session verification completed', {
@@ -90,18 +50,47 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') as JobStatus | null;
+    const title = searchParams.get('title');
+    const companyId = searchParams.get('companyId');
+    console.log("session", session);
     // Database query
     const queryStartTime = performance.now();
-    const db = await getDb();
-    const jobs = await db.all(`
-      SELECT 
-        j.*,
-        c.name as company_name
-      FROM jobs j
-      JOIN companies c ON j.company_id = c.id
-      WHERE j.user_id = ?
-      ORDER BY j.application_date DESC
-    `, [session.id]);
+    const jobs = await prisma.job.findMany({
+      where: {
+        userId: session.id,
+        ...(status && { status }),
+        ...(title && {
+          title: {
+            contains: title,
+            mode: 'insensitive'
+          }
+        }),
+        ...(companyId && { companyId })
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            website: true,
+          }
+        },
+        resume: {
+          select: {
+            id: true,
+            name: true,
+            fileUrl: true,
+          }
+        }
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    });
+
     const queryDuration = performance.now() - queryStartTime;
 
     jobsApiLogger.debug('Database query completed', {
@@ -110,28 +99,16 @@ export async function GET() {
       jobsCount: jobs.length
     });
 
-    // Format response
-    const formattedJobs = jobs.map((job: any) => ({
-      id: job.id,
-      title: job.title,
-      company: {
-        name: job.company_name
-      },
-      status: job.status,
-      applicationDate: job.application_date,
-      url: job.url,
-    }));
-
     jobsApiLogger.info('Jobs fetched successfully', {
       requestId,
       userId: session.id,
-      jobsCount: formattedJobs.length
+      jobsCount: jobs.length
     });
 
     const totalDuration = performance.now() - requestStartTime;
     jobsApiLogger.metrics('/api/jobs', 'GET', totalDuration, 200);
 
-    return NextResponse.json({ jobs: formattedJobs });
+    return NextResponse.json({ jobs });
   } catch (error) {
     const totalDuration = performance.now() - requestStartTime;
     
@@ -153,74 +130,6 @@ export async function GET() {
   }
 }
 
-/**
- * @swagger
- * /api/jobs:
- *   post:
- *     summary: Create a new job entry
- *     tags: [Jobs]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - title
- *               - companyId
- *               - status
- *               - applicationDate
- *             properties:
- *               title:
- *                 type: string
- *               companyId:
- *                 type: string
- *                 format: uuid
- *               url:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [applied, interview, offer, rejected]
- *               applicationDate:
- *                 type: string
- *                 format: date
- *               notes:
- *                 type: string
- *     responses:
- *       200:
- *         description: Job created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 job:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                       format: uuid
- *                     title:
- *                       type: string
- *                     companyId:
- *                       type: string
- *                     status:
- *                       type: string
- *                     applicationDate:
- *                       type: string
- *                     url:
- *                       type: string
- *                     notes:
- *                       type: string
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
 export async function POST(request: Request) {
   const requestId = Math.random().toString(36).substring(7);
   const requestStartTime = performance.now();
@@ -238,36 +147,29 @@ export async function POST(request: Request) {
       duration: `${sessionDuration.toFixed(2)}ms`,
       authenticated: !!session?.id
     });
+    jobsApiLogger.debug('Request payload received', {request})
 
     if (!session?.id) {
       jobsApiLogger.warn('Unauthorized job creation attempt', { requestId });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Parse request body
-    const {
-      title,
-      companyId,
-      url,
-      status,
-      applicationDate,
-      notes
-    } = await request.json();
+    const jobData = await request.json();
 
     jobsApiLogger.debug('Request payload received', {
       requestId,
       jobData: {
-        title,
-        companyId,
-        status,
-        applicationDate,
-        hasNotes: !!notes
+        title: jobData.title,
+        companyId: jobData.companyId,
+        status: jobData.status,
+        applicationDate: jobData.applicationDate,
+        hasNotes: !!jobData.notes
       }
     });
 
     // Validate required fields
-    const requiredFields = ['title', 'companyId', 'status', 'applicationDate'];
-    const missingFields = requiredFields.filter(field => !eval(field));
+    const requiredFields = ['title', 'companyId', 'status'];
+    const missingFields = requiredFields.filter(field => !jobData[field]);
     
     if (missingFields.length > 0) {
       jobsApiLogger.warn('Missing required fields', {
@@ -280,46 +182,52 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create job
-    const db = await getDb();
-    const jobId = crypto.randomUUID();
+    // Create job using Prisma
     const insertStartTime = performance.now();
-
-    await db.run(`
-      INSERT INTO jobs (
-        id,
-        user_id,
-        company_id,
-        title,
-        url,
-        status,
-        application_date,
-        notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      jobId,
-      session.id,
-      companyId,
-      title,
-      url,
-      status,
-      applicationDate,
-      notes
-    ]);
+    jobsApiLogger.debug('Session', session);
+    console.log("jobData", jobData);
+    const job = await prisma.job.create({
+      data: {
+        title: jobData.title,
+        companyId: jobData.companyId,
+        url: jobData.url,
+        status: jobData.status,
+        applicationDate: jobData.applicationDate,
+        resumeId: jobData.resumeId,
+        notes: jobData.notes,
+        userId: session.id,
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            website: true,
+          }
+        },
+        resume: {
+          select: {
+            id: true,
+            name: true,
+            fileUrl: true,
+          }
+        }
+      }
+    });
 
     const insertDuration = performance.now() - insertStartTime;
 
     jobsApiLogger.debug('Database insert completed', {
       requestId,
       duration: `${insertDuration.toFixed(2)}ms`,
-      jobId
+      jobId: job.id
     });
 
     jobsApiLogger.info('Job created successfully', {
       requestId,
       userId: session.id,
-      jobId,
-      title
+      jobId: job.id,
+      title: job.title
     });
 
     const totalDuration = performance.now() - requestStartTime;
@@ -327,15 +235,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      job: {
-        id: jobId,
-        title,
-        companyId,
-        url,
-        status,
-        applicationDate,
-        notes,
-      }
+      job
     });
   } catch (error) {
     const totalDuration = performance.now() - requestStartTime;

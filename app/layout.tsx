@@ -1,8 +1,5 @@
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth';
-import { Toaster } from '@/components/ui/toaster';
-import { ErrorBoundaryProvider } from '@/components/providers/error-boundary-provider';
+import { Providers } from '@/components/providers/provider';
 
 export default function RootLayout({
   children,
@@ -20,19 +17,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <ErrorBoundaryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
-          </ThemeProvider>
-        </ErrorBoundaryProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
