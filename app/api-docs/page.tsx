@@ -1,21 +1,11 @@
-'use client';
+import { getApiDocs } from "@/lib/swagger";
+import ReactSwagger from "./react-swagger";
 
-import dynamic from 'next/dynamic';
-import { Loader2 } from 'lucide-react';
-
-const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
-  ),
-});
-
-export default function ApiDocs() {
+export default async function IndexPage() {
+  const spec = await getApiDocs();
   return (
-    <div className="container mx-auto p-4">
-      <SwaggerUI url="/api/docs" />
-    </div>
+    <section className="container">
+      <ReactSwagger spec={spec} />
+    </section>
   );
 }

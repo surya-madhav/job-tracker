@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "DEV_AUTH_BYPASS=true next dev",
+    "dev": "DEV_AUTH_BYPASS=false next dev",
     "dev:auth": "next dev",
     "build": "next build",
     "start": "next start",
