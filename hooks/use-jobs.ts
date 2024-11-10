@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { JobWithRelations, CreateJobDTO, UpdateJobDTO, JobQuery } from '@/types/jobs.type';
+import { JobWithRelations, CreateJobDTO, UpdateJobDTO, JobQuery, MagicScrapeJobDTO } from '@/types/jobs.type';
 
 // API functions
 const fetchJobs = async (query: JobQuery & { userId?: string }) => {
@@ -90,5 +90,52 @@ export function useDeleteJob() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     },
+  });
+}
+const magicScrapeJob = async (data: MagicScrapeJobDTO) => {
+  const response = await fetch('/api/jobs/magic-scrape', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to scrape job');
+  }
+  
+  const result = await response.json();
+  return result.job;
+};
+
+// Keep existing hooks
+
+// Add new hook for magic scrape
+export function useMagicScrape() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: magicScrapeJob,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+  });
+}
+
+// Add new hook for filtering by technical tags
+export function useJobsByTechnicalTags(userId?: string, tags?: string[]) {
+  return useQuery({
+    queryKey: ['jobs', 'technical', tags],
+    queryFn: () => fetchJobs({ userId, technicalTags: tags }),
+    enabled: !!userId && !!tags?.length,
+  });
+}
+
+// Add new hook for filtering by term
+export function useJobsByTerm(userId?: string, term?: string) {
+  return useQuery({
+    queryKey: ['jobs', 'term', term],
+    queryFn: () => fetchJobs({ userId, term }),
+    enabled: !!userId && !!term,
   });
 }

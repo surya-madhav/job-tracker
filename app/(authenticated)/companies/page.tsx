@@ -15,6 +15,8 @@ import {
 import Link from 'next/link';
 import { CompanyGrid } from '@/components/companies/company-grid';
 import { CompanyList } from '@/components/companies/company-list';
+import { useCompanies } from '@/hooks/use-companies';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 type ViewType = 'grid' | 'list';
 
@@ -31,7 +33,6 @@ const sortOptions = [
   { value: 'name', label: 'Company Name' },
   { value: 'recent', label: 'Recently Added' },
   { value: 'applications', label: 'Most Applications' },
-  { value: 'size', label: 'Company Size' },
 ];
 
 export default function CompaniesPage() {
@@ -40,49 +41,29 @@ export default function CompaniesPage() {
   const [industry, setIndustry] = useState('all');
   const [sort, setSort] = useState('name');
 
-  const [companies] = useState([
-    {
-      id: '1',
-      name: 'Tech Corp Inc.',
-      logo: 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=200&h=200&fit=crop',
-      industry: 'Technology',
-      location: 'San Francisco, CA',
-      size: '1000-5000',
-      website: 'https://techcorp.com',
-      activeJobs: 3,
-      contacts: 2,
-      description: 'Leading technology company specializing in AI and machine learning solutions.',
-    },
-    {
-      id: '2',
-      name: 'Finance Plus',
-      logo: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&h=200&fit=crop',
-      industry: 'Finance',
-      location: 'New York, NY',
-      size: '5000+',
-      website: 'https://financeplus.com',
-      activeJobs: 1,
-      contacts: 1,
-      description: 'Global financial services firm providing innovative solutions.',
-    },
-    {
-      id: '3',
-      name: 'Health Solutions',
-      logo: 'https://images.unsplash.com/photo-1550831107-1553da8c8464?w=200&h=200&fit=crop',
-      industry: 'Healthcare',
-      location: 'Boston, MA',
-      size: '500-1000',
-      website: 'https://healthsolutions.com',
-      activeJobs: 2,
-      contacts: 3,
-      description: 'Healthcare technology company improving patient care through innovation.',
-    },
-  ]);
+  const { data: companies = [], isLoading, error } = useCompanies({
+    search: search || undefined,
+    industry: industry !== 'all' ? industry : undefined,
+  });
 
   const viewOptions = [
     { icon: LayoutGrid, value: 'grid', label: 'Grid' },
     { icon: List, value: 'list', label: 'List' },
   ];
+
+  // Sort companies based on selected option
+  const sortedCompanies = [...companies].sort((a, b) => {
+    switch (sort) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'recent':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'applications':
+        return (b._count?.jobs || 0) - (a._count?.jobs || 0);
+      default:
+        return 0;
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -159,8 +140,24 @@ export default function CompaniesPage() {
       </Card>
 
       <div className="mt-6">
-        {view === 'grid' && <CompanyGrid companies={companies} />}
-        {view === 'list' && <CompanyList companies={companies} />}
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <LoadingSpinner />
+          </div>
+        ) : error ? (
+          <div className="text-center text-destructive">
+            Error loading companies
+          </div>
+        ) : sortedCompanies.length === 0 ? (
+          <div className="text-center text-muted-foreground">
+            No companies found. Try adjusting your filters or add a new company.
+          </div>
+        ) : (
+          <>
+            {view === 'grid' && <CompanyGrid companies={sortedCompanies} />}
+            {view === 'list' && <CompanyList companies={sortedCompanies} />}
+          </>
+        )}
       </div>
     </div>
   );

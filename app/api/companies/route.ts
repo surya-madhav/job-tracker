@@ -1,28 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { CompanyService } from '@/services/company.service';
 import { getSession } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+const companyService = new CompanyService();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await getSession();
-    if (!session?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || undefined;
+    const industry = searchParams.get('industry') || undefined;
 
-    const db = await getDb();
-    const companies = await db.all(`
-      SELECT DISTINCT c.* 
-      FROM companies c 
-      LEFT JOIN jobs j ON c.id = j.company_id 
-      WHERE j.user_id = ? OR c.id IN (
-        SELECT company_id FROM contacts WHERE user_id = ?
-      )
-      ORDER BY c.name ASC
-    `, [session.id, session.id]);
-
-    return NextResponse.json({ companies });
+    const companies = await companyService.findMany({ search, industry });
+    return NextResponse.json(companies);
   } catch (error) {
     console.error('Failed to fetch companies:', error);
     return NextResponse.json(
@@ -39,27 +28,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, website, industry, location, notes } = await request.json();
-    const db = await getDb();
-
-    const companyId = crypto.randomUUID();
-    await db.run(`
-      INSERT INTO companies (
-        id, name, website, industry, location, notes
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `, [companyId, name, website, industry, location, notes]);
-
-    return NextResponse.json({ 
-      success: true,
-      company: {
-        id: companyId,
-        name,
-        website,
-        industry,
-        location,
-        notes,
-      }
-    });
+    const data = await request.json();
+    const company = await companyService.create(data);
+    
+    return NextResponse.json(company);
   } catch (error) {
     console.error('Failed to create company:', error);
     return NextResponse.json(
