@@ -53,9 +53,9 @@ export function JobGrid({ jobs }: { jobs: JobWithRelations[] }) {
                   Applied {formatDistanceToNow(new Date(job.applicationDate), { addSuffix: true })}
                 </div>
               )}
-              {job.notes && (
+              {job.technicalTags && (
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {job.notes}
+                  {job.technicalTags?.join(', ')}
                 </p>
               )}
               <Button 
